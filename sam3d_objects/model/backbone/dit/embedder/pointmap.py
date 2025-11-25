@@ -152,7 +152,6 @@ class PointPatchEmbed(nn.Module):
         
         return embeddings
 
-    @torch._dynamo.disable()
     def embed_pointmap_windows(
         self, xyz: torch.Tensor, valid_mask: torch.Tensor = None
     ) -> torch.Tensor:

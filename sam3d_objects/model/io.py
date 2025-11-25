@@ -1,15 +1,24 @@
 # Copyright (c) Meta Platforms, Inc. and affiliates.
 from typing import Any, Callable, Dict, List, Optional, Union, Iterable
-import lightning.pytorch as pl
 import torch
 from pathlib import Path
 import os
 import re
 from loguru import logger
-from lightning.pytorch.utilities.consolidate_checkpoint import (
-    _format_checkpoint,
-    _load_distributed_checkpoint,
-)
+
+# Make lightning optional for inference-only use
+try:
+    import lightning.pytorch as pl
+    from lightning.pytorch.utilities.consolidate_checkpoint import (
+        _format_checkpoint,
+        _load_distributed_checkpoint,
+    )
+    LIGHTNING_AVAILABLE = True
+except ImportError:
+    # Create stub for type hints
+    pl = type('pl', (), {'LightningModule': type('LightningModule', (), {})})()
+    LIGHTNING_AVAILABLE = False
+    logger.warning("Lightning not available - only inference mode supported")
 from glob import glob
 
 from sam3d_objects.data.utils import get_child, set_child
@@ -134,6 +143,11 @@ def get_last_checkpoint(path: str):
 
 
 def load_sharded_checkpoint(path: str, device: Optional[str]):
+    if not LIGHTNING_AVAILABLE:
+        raise RuntimeError(
+            "Loading sharded checkpoints requires PyTorch Lightning. "
+            "Please install lightning to use this feature."
+        )
     if device != "cpu":
         raise RuntimeError(
             f'loading sharded weights on device "{device}" is not available, please use the "cpu" device instead'

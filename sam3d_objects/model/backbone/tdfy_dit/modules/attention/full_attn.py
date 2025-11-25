@@ -4,12 +4,21 @@ import torch
 import math
 from . import DEBUG, BACKEND
 
+# Check PyTorch version for torch.nn.attention support (2.1+)
+import sys
+TORCH_MAJOR, TORCH_MINOR = map(int, torch.__version__.split('.')[:2])
+TORCH_NN_ATTENTION_AVAILABLE = (TORCH_MAJOR > 2) or (TORCH_MAJOR == 2 and TORCH_MINOR >= 1)
+
 if BACKEND == "xformers":
     import xformers.ops as xops
 elif BACKEND == "flash_attn":
     import flash_attn
 elif BACKEND == "torch_flash_attn":
-    pass
+    if not TORCH_NN_ATTENTION_AVAILABLE:
+        # Fallback to sdpa for PyTorch 2.0
+        print(f"Warning: torch_flash_attn backend requires PyTorch 2.1+, falling back to sdpa backend (current: {torch.__version__})")
+        BACKEND = "sdpa"
+        from torch.nn.functional import scaled_dot_product_attention as sdpa
 elif BACKEND == "sdpa":
     from torch.nn.functional import scaled_dot_product_attention as sdpa
 elif BACKEND == "naive":
@@ -159,9 +168,17 @@ def scaled_dot_product_attention(*args, **kwargs):
         k = k.permute(0, 2, 1, 3)  # [N, H, L, C]
         v = v.permute(0, 2, 1, 3)  # [N, H, L, C]
         original_dtype = q.dtype
-        with torch.nn.attention.sdpa_kernel(backends=[torch.nn.attention.SDPBackend.FLASH_ATTENTION]):
+
+        # PyTorch 2.1+ has torch.nn.attention module with backend selection
+        if TORCH_NN_ATTENTION_AVAILABLE:
+            with torch.nn.attention.sdpa_kernel(backends=[torch.nn.attention.SDPBackend.FLASH_ATTENTION]):
+                with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
+                    out = torch.nn.functional.scaled_dot_product_attention(q, k, v)  # [N, H, L, C]
+        else:
+            # PyTorch 2.0: Use SDPA without backend selection (falls back automatically)
             with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
                 out = torch.nn.functional.scaled_dot_product_attention(q, k, v)  # [N, H, L, C]
+
         out = out.permute(0, 2, 1, 3)  # [N, L, H, C]
         out = out.to(original_dtype)
     elif BACKEND == "naive":

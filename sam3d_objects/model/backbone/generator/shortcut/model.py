@@ -11,7 +11,7 @@ from sam3d_objects.model.backbone.generator.base import Base
 from sam3d_objects.data.utils import right_broadcasting
 from sam3d_objects.data.utils import tree_tensor_map, tree_reduce_unique
 from sam3d_objects.model.backbone.generator.flow_matching.model import FlowMatching, _get_device
-from torch.nn.attention import SDPBackend, sdpa_kernel
+# Removed unused imports: SDPBackend, sdpa_kernel (not compatible with PyTorch 2.0)
 from torch._utils import _flatten_dense_tensors, _unflatten_dense_tensors
 import copy
 
