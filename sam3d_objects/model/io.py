@@ -194,7 +194,7 @@ def load_model_from_checkpoint(
     else:  # if neither a file nor a directory, path does not exist
         raise FileNotFoundError(checkpoint_path)
 
-    if isinstance(model, pl.LightningModule):
+    if LIGHTNING_AVAILABLE and isinstance(model, pl.LightningModule):
         model.on_load_checkpoint(checkpoint)
 
     # get state dictionary
