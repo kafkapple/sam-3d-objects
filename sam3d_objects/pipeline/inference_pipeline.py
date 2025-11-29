@@ -203,9 +203,11 @@ class InferencePipeline:
             self.slat_std = torch.tensor(slat_std)
 
     def _compile(self):
-        torch._dynamo.config.cache_size_limit = 64
-        torch._dynamo.config.accumulated_cache_size_limit = 2048
-        torch._dynamo.config.capture_scalar_outputs = True
+        # Configure torch._dynamo if available (PyTorch 2.1+)
+        if hasattr(torch, '_dynamo'):
+            torch._dynamo.config.cache_size_limit = 64
+            torch._dynamo.config.accumulated_cache_size_limit = 2048
+            torch._dynamo.config.capture_scalar_outputs = True
         compile_mode = "max-autotune"
         logger.info(f"Compile mode {compile_mode}")
 

@@ -7,18 +7,31 @@ import re
 from loguru import logger
 
 # Make lightning optional for inference-only use
-try:
-    import lightning.pytorch as pl
-    from lightning.pytorch.utilities.consolidate_checkpoint import (
-        _format_checkpoint,
-        _load_distributed_checkpoint,
-    )
-    LIGHTNING_AVAILABLE = True
-except ImportError:
-    # Create stub for type hints
-    pl = type('pl', (), {'LightningModule': type('LightningModule', (), {})})()
-    LIGHTNING_AVAILABLE = False
-    logger.warning("Lightning not available - only inference mode supported")
+# Disabled by default to avoid isinstance() issues with mock objects
+LIGHTNING_AVAILABLE = False
+_format_checkpoint = None
+_load_distributed_checkpoint = None
+
+# Stub class for type hints (must be actual class for isinstance())
+class _LightningModuleStub:
+    pass
+
+class _PLStub:
+    LightningModule = _LightningModuleStub
+
+pl = _PLStub()
+
+# Optionally enable lightning if explicitly requested
+if os.environ.get('SAM3D_ENABLE_LIGHTNING', '0') == '1':
+    try:
+        import lightning.pytorch as pl
+        from lightning.pytorch.utilities.consolidate_checkpoint import (
+            _format_checkpoint,
+            _load_distributed_checkpoint,
+        )
+        LIGHTNING_AVAILABLE = True
+    except ImportError:
+        pass
 from glob import glob
 
 from sam3d_objects.data.utils import get_child, set_child

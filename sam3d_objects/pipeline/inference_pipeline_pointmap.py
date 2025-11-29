@@ -99,9 +99,11 @@ class InferencePipelinePointMap(InferencePipeline):
         super().__init__(*args, **kwargs)
 
     def _compile(self):
-        torch._dynamo.config.cache_size_limit = 64
-        torch._dynamo.config.accumulated_cache_size_limit = 2048
-        torch._dynamo.config.capture_scalar_outputs = True
+        # Configure torch._dynamo if available (PyTorch 2.1+)
+        if hasattr(torch, '_dynamo'):
+            torch._dynamo.config.cache_size_limit = 64
+            torch._dynamo.config.accumulated_cache_size_limit = 2048
+            torch._dynamo.config.capture_scalar_outputs = True
         compile_mode = "max-autotune"
 
         for embedder, _ in self.condition_embedders[

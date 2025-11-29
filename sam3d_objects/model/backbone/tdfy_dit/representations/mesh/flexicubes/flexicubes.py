@@ -15,7 +15,14 @@
 # limitations under the License.
 import torch
 from .tables import *
-from kaolin.utils.testing import check_tensor
+
+# kaolin is optional - may fail due to warp.so loading issues on some systems
+try:
+    from kaolin.utils.testing import check_tensor
+except (ImportError, RuntimeError, OSError):
+    # Fallback: no-op function when kaolin is not available
+    def check_tensor(tensor, *args, **kwargs):
+        return tensor
 
 __all__ = [
     'FlexiCubes'
