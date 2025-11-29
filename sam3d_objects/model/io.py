@@ -171,7 +171,7 @@ def load_sharded_checkpoint(path: str, device: Optional[str]):
 
 
 def load_model_from_checkpoint(
-    model: Union[pl.LightningModule, torch.nn.Module],
+    model: torch.nn.Module,
     checkpoint_path: str,
     strict: bool = True,
     device: Optional[str] = None,
